@@ -1,0 +1,13 @@
+apt_packages:
+  - python3.12
+  - python3.12-venv
+  - python3-pip
+  - python-is-python3
+  - direnv
+  - git
+  - gh
+  - zsh
+
+python:
+  version: "3.12"
+  venv_path: "/app/.venv"

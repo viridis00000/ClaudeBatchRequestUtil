@@ -1,0 +1,22 @@
+# Linting and formatting
+mypy==1.13.0
+ruff==0.7.3
+
+# Development tools
+pytest==8.3.3
+pydantic==2.9.2
+python-dotenv==1.0.1
+
+# Anthropic API
+anthropic==0.39.0
+
+# Celery
+redis==5.0.1
+celery[redis]==5.4.0
+
+# File handling and logging
+pathlib==1.0.1
+pyyaml==6.0.2
+types-PyYAML==6.0.12
+pytz==2024.2
+types-pytz==2024.2.0.20241003

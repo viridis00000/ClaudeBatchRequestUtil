@@ -1,0 +1,33 @@
+{
+    "name": "Ubuntu Dev",
+    "dockerComposeFile": "../docker-compose.yaml",
+    "service": "app",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/app/venv/bin/python",
+                "python.linting.enabled": true,
+                "python.linting.ruffEnabled": true,
+                "python.linting.ruffPath": "/app/venv/bin/ruff",
+                "python.linting.mypyEnabled": true,
+                "python.linting.mypyPath": "/app/venv/bin/mypy",
+                "python.formatting.blackPath": "/app/venv/bin/black"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-azuretools.vscode-docker",
+                "eamodio.gitlens",
+                "matangover.mypy",
+                "charliermarsh.ruff"
+            ]
+        }
+    },
+    "postCreateCommand": "bash /app/.devcontainer/post_commands.sh",
+    "remoteUser": "root",
+    "remoteEnv": {
+        "PROJECT_ROOT": "/app",
+        "PYTHONPATH": "/app/python"
+    }
+}

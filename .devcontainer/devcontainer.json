@@ -1,0 +1,31 @@
+{
+    "name": "Anthropic Batch Utils",
+    "dockerComposeFile": "../docker-compose.yaml",
+    "service": "app",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/app/.venv/bin/python",
+                "editor.defaultFormatter": "charliermarsh.ruff",
+                "python.linting.ruffEnabled": true,
+                "python.linting.ruffPath": "/app/.venv/bin/ruff",
+                "python.analysis.typeCheckingMode": "basic"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.black-formatter",
+                "ms-python.vscode-pylance",
+                "ms-azuretools.vscode-docker",
+                "eamodio.gitlens",
+                "charliermarsh.ruff"
+            ]
+        }
+    },
+    "postCreateCommand": "bash /app/.devcontainer/post_commands.sh",
+    "remoteUser": "root",
+    "remoteEnv": {
+        "PROJECT_ROOT": "/app",
+        "PYTHONPATH": "/app/.venv/bin/python"
+    }
+}

@@ -1,0 +1,24 @@
+{
+  "system_prompt": "You are a helpful AI assistant. Please provide clear and concise answers.",
+  "messages_list": [
+    [
+      {
+        "role": "user",
+        "content": "What is 2+2?"
+      }
+    ],
+    [
+      {
+        "role": "user",
+        "content": "What is the capital of France?"
+      }
+    ],
+    [
+      {
+        "role": "user",
+        "content": "What is the meaning of life?"
+      }
+    ]
+  ],
+  "custom_id_prefix": "example_batch"
+} 

@@ -1,0 +1,91 @@
+# API Configuration
+api:
+  version: "2023-06-01"
+  beta_features:
+    - "message-batches-2024-09-24"
+    - "prompt-caching-2024-07-31"
+  timeout: 300
+  max_payload_size: 104857600  # 100MB in bytes
+
+# Model Configuration
+model:
+  name: "claude-3-5-haiku-20241022"
+  display_name: "haiku"
+  max_tokens: 8192
+  temperature: 0.0
+  stop_sequences: null
+  response_format: "text"  # "text" or "json"
+
+# Batch Processing
+batch:
+  max_size: 10000
+  chunk_size: 1000
+  enable_prompt_cache: false
+  cache_type: "ephemeral"
+
+# Storage Configuration
+storage:
+  base_dir: "output"
+  subdirs:
+    requests: "batch_records"
+    results: "results"
+    logs: "logs"
+  request_file_prefix: "batch_request"
+  result_file_prefix: "batch_result"
+
+# Celery Worker Configuration
+worker:
+  broker:
+    url: "redis://redis:6379/0"
+    connection_retry: true
+    connection_retry_on_startup: true
+  
+  backend:
+    url: "redis://redis:6379/1"
+    result_expires: null
+  
+  task:
+    serializer: "json"
+    result_serializer: "json"
+    accept_content: ["json"]
+    default_queue: "anthropic"
+    track_started: true
+    ignore_result: false
+    create_missing_queues: true
+    delivery_mode: "persistent"
+    always_eager: false
+  
+  worker:
+    prefetch_multiplier: 1
+    max_tasks_per_child: 1
+    enable_utc: true
+    timezone: "UTC"
+  
+  monitor:
+    retry_delay: 300
+    max_retries: 3
+    initial_delay: 30
+  
+  beat:
+    schedule_filename: "celerybeat-schedule"
+  
+  # Base task configuration (共通設定)
+  base_task:
+    track_started: true
+    ignore_result: false
+    acks_late: true
+    reject_on_worker_lost: true
+    retry_backoff: true
+    retry_jitter: true
+    retry_backoff_max: 600
+    time_limit: null
+    soft_time_limit: null
+  
+  # Task specific configurations
+  tasks:
+    monitor_batch:
+      name: "anthropic_batch_tasks.monitor_batch"
+      max_retries: null  # null for infinite retries
+      retry_delay: 60
+      queue: "anthropic"
+      eta_delay: 30  # seconds to delay next execution

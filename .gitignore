@@ -1,0 +1,13 @@
+# env file
+.env
+
+# virtual environment
+.venv/
+
+# cache files
+__pycache__/
+.cache/
+*.pyc
+
+# output files
+output/
