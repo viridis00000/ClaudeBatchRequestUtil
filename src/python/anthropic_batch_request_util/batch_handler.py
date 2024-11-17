@@ -717,6 +717,7 @@ class AnthropicBatchHandler:
             try:
                 # Execute batch request
                 message_batch = self.client.beta.messages.batches.create(
+                    betas = self.settings.api.beta_features,
                     requests=[Request(custom_id=r["custom_id"], params=r["params"]) for r in requests]
                 )
                 
