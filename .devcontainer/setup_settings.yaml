@@ -9,6 +9,7 @@ apt_packages:
   - gh
   - zsh
   - redis-server
+  - supervisor
 
 python:
   version: "3.12"
