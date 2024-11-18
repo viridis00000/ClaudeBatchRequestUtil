@@ -22,3 +22,4 @@ redis:
   appendonly: "yes"
   maxmemory: "256mb"
   maxmemory_policy: "allkeys-lru"
+  protected_mode: "no" 
