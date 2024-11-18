@@ -7,13 +7,16 @@ ENV PYTHONUNBUFFERED=1
 # Copy all contents from host to container
 COPY . /app
 
+# Set working directory
 WORKDIR /app
+
 
 # Install yq
 RUN apt-get update && \
     apt-get install -y wget && \
     wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && \
     chmod +x /usr/bin/yq
+
 
 # Install apt packages
 RUN apt-get install -y $(yq eval '.apt_packages | join(" ")' /app/.devcontainer/setup_settings.yaml)
