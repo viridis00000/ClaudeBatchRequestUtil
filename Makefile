@@ -1,5 +1,5 @@
 # Load settings from YAML
-SETTINGS_FILE := src/python/anthropic_batch_request_util/config/settings.yaml
+SETTINGS_FILE := config/settings.yaml
 PYTHON_LOAD_SETTINGS := python -c 'import yaml; print(yaml.safe_load(open("$(SETTINGS_FILE)"))["worker"]["task"]["default_queue"])'
 WORKER_QUEUE := $(shell $(PYTHON_LOAD_SETTINGS))
 

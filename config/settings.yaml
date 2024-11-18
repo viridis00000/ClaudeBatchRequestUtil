@@ -86,6 +86,6 @@ worker:
     monitor_batch:
       name: "anthropic_batch_tasks.monitor_batch"
       max_retries: null  # null for infinite retries
-      retry_delay: 60
+      retry_delay: 600 # failed request retry interval
       queue: "anthropic"
-      eta_delay: 30  # seconds to delay next execution
+      eta_delay: 300  # check status interval

@@ -195,7 +195,7 @@ class Settings(BaseModel):
         if config_path is None:
             config_path = os.getenv(
                 'ANTHROPIC_CONFIG_PATH',
-                'src/python/anthropic_batch_request_util/config/settings.yaml'
+                'config/settings.yaml'
             )
 
         try:
