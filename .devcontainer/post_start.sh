@@ -30,5 +30,3 @@ else
     supervisorctl status redis
     exit 1
 fi
-
-make start-worker
