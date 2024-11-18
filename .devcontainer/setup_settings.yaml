@@ -8,7 +8,17 @@ apt_packages:
   - jq
   - gh
   - zsh
+  - redis-server
+  - supervisor
 
 python:
   version: "3.12"
   venv_path: "/app/.venv"
+
+redis:
+  data_dir: "/data/redis"
+  port: 6379
+  daemonize: "yes"
+  appendonly: "yes"
+  maxmemory: "256mb"
+  maxmemory_policy: "allkeys-lru"

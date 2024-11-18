@@ -1,6 +1,6 @@
 {
     "name": "Anthropic Batch Utils",
-    "dockerComposeFile": "../docker-compose.yaml",
+    "dockerComposeFile": "docker-compose.yaml",
     "service": "app",
     "workspaceFolder": "/app",
     "customizations": {
@@ -22,7 +22,8 @@
             ]
         }
     },
-    "postCreateCommand": "bash /app/.devcontainer/post_commands.sh",
+    "postCreateCommand": "bash /app/.devcontainer/post_create.sh",
+    "postStartCommand": "bash /app/.devcontainer/post_start.sh",
     "remoteUser": "root",
     "remoteEnv": {
         "PROJECT_ROOT": "/app",

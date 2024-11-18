@@ -36,12 +36,12 @@ storage:
 # Celery Worker Configuration
 worker:
   broker:
-    url: "redis://redis:6379/0"
+    url: "redis://localhost:6379/0"
     connection_retry: true
     connection_retry_on_startup: true
   
   backend:
-    url: "redis://redis:6379/1"
+    url: "redis://localhost:6379/1"
     result_expires: null
   
   task:

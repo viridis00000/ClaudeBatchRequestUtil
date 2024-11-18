@@ -22,7 +22,7 @@ start-worker:
 		-c $(WORKER_CONCURRENCY) \
 		--loglevel=INFO \
 		-n anthropic_worker@%h \
-		--logfile=$(LOG_DIR)/celery.log \
+		--logfile=${OUTPUT_DIR}/$(LOG_DIR)/celery.log \
 		-D
 
 start-worker-debug:
