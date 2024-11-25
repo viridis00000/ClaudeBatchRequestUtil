@@ -11,33 +11,39 @@ import time
 
 from anthropic.types.beta.messages.batch_create_params import Request
 
-from src.python.anthropic_batch_request_util.config.settings import Settings, settings
+from .config.settings import Settings, settings
 
 logger = logging.getLogger(__name__)
 
+
 class BatchStatus(Enum):
     """Anthropic batch processing status"""
+
     PROCESSING = "in_progress"
     ENDED = "ended"
     CANCELING = "canceling"
     UNKNOWN = "unknown"
 
     @classmethod
-    def from_str(cls, value: str) -> 'BatchStatus':
+    def from_str(cls, value: str) -> "BatchStatus":
         try:
             return next(status for status in cls if status.value == value)
         except StopIteration:
             return cls.UNKNOWN
 
+
 class BatchResultType(Enum):
     """Anthropic batch result types"""
+
     SUCCEEDED = "succeeded"
     ERROR = "error"
     EXPIRED = "expired"
     CANCELED = "canceled"
 
+
 class AnthropicErrorType(Enum):
     """Anthropic API specific error types"""
+
     RATE_LIMIT = "rate_limit"
     INVALID_REQUEST = "invalid_request"
     AUTHENTICATION = "authentication"
@@ -48,7 +54,7 @@ class AnthropicErrorType(Enum):
     UNKNOWN = "unknown"
 
     @classmethod
-    def from_error(cls, error: Exception) -> 'AnthropicErrorType':
+    def from_error(cls, error: Exception) -> "AnthropicErrorType":
         error_str = str(error).lower()
         if "rate limit" in error_str:
             return cls.RATE_LIMIT
@@ -66,48 +72,61 @@ class AnthropicErrorType(Enum):
             return cls.SERVICE_UNAVAILABLE
         return cls.UNKNOWN
 
+
 class BatchProcessingError(Exception):
     """Base exception for batch processing errors"""
+
     def __init__(
         self,
         message: str,
         error_type: AnthropicErrorType = AnthropicErrorType.UNKNOWN,
-        original_error: Exception | None = None
+        original_error: Exception | None = None,
     ):
         super().__init__(message)
         self.error_type = error_type
         self.original_error = original_error
 
+
 class ChunkingError(BatchProcessingError):
     """Error during message chunking"""
+
     pass
+
 
 class ValidationError(BatchProcessingError):
     """Error during request validation"""
+
     pass
+
 
 class CacheControlError(BatchProcessingError):
     """Error during cache control preparation"""
+
     pass
+
 
 class CacheType(Enum):
     """Cache types supported by the Anthropic batch API"""
+
     EPHEMERAL = "ephemeral"
 
     @classmethod
-    def from_str(cls, value: str) -> 'CacheType':
+    def from_str(cls, value: str) -> "CacheType":
         """Convert string to CacheType enum value"""
         try:
             return cls(value.lower())
         except ValueError:
-            raise ValueError(f"Invalid cache type: {value}. Must be one of: {[e.value for e in cls]}")
+            raise ValueError(
+                f"Invalid cache type: {value}. Must be one of: {[e.value for e in cls]}"
+            )
+
 
 class AnthropicBatchHandlerUtil:
     """
     Utility class for internal batch processing operations.
     Handles validation, caching, and data persistence operations.
     """
-    
+
     @staticmethod
     def build_request_payload(
         system_prompt: str,
@@ -116,7 +135,7 @@ class AnthropicBatchHandlerUtil:
         model_string: str,
         max_tokens: int,
         temperature: float,
-        stop_sequences: list | None = None
+        stop_sequences: list | None = None,
     ) -> Dict[str, Any]:
         """
         Build single request payload for the Anthropic batch API.
@@ -158,8 +177,8 @@ class AnthropicBatchHandlerUtil:
                     "max_tokens": max_tokens,
                     "temperature": temperature,
                     "messages": messages,
-                    "system": system_prompt
-                }
+                    "system": system_prompt,
+                },
             }
 
             if stop_sequences is not None:
@@ -180,13 +199,11 @@ class AnthropicBatchHandlerUtil:
 
     @staticmethod
     def validate_batch_request(
-        requests: List[Dict[str, Any]], 
-        max_batch_size: int,
-        max_payload_size: int
+        requests: List[Dict[str, Any]], max_batch_size: int, max_payload_size: int
     ) -> None:
         """
         Validate batch request against configured limits.
-        
+
         Args:
             requests: List of request dictionaries to validate
             max_batch_size: Maximum allowed batch size from settings
@@ -205,8 +222,8 @@ class AnthropicBatchHandlerUtil:
             # Validate payload size and structure
             try:
                 payload = {"requests": requests}
-                payload_size = len(json.dumps(payload).encode('utf-8'))
-                
+                payload_size = len(json.dumps(payload).encode("utf-8"))
+
                 if payload_size > max_payload_size:
                     raise ValidationError(
                         f"Request payload size ({payload_size / 1024 / 1024:.2f}MB) "
@@ -216,15 +233,17 @@ class AnthropicBatchHandlerUtil:
                 # Validate structure of each request
                 for i, request in enumerate(requests):
                     if not isinstance(request, dict):
-                        raise ValidationError(f"Request at index {i} is not a dictionary")
-                    
+                        raise ValidationError(
+                            f"Request at index {i} is not a dictionary"
+                        )
+
                     required_fields = {"custom_id", "params"}
                     missing_fields = required_fields - set(request.keys())
                     if missing_fields:
                         raise ValidationError(
                             f"Request at index {i} is missing required fields: {missing_fields}"
                         )
-                    
+
                     required_params = {"model", "messages", "system"}
                     missing_params = required_params - set(request["params"].keys())
                     if missing_params:
@@ -271,18 +290,24 @@ class AnthropicBatchHandlerUtil:
                     system = params.get("system")
 
                     if system is None:
-                        logger.warning(f"Request {i} has no system prompt, skipping cache control")
+                        logger.warning(
+                            f"Request {i} has no system prompt, skipping cache control"
+                        )
                         continue
 
                     # Convert string system prompts to structured format
                     if isinstance(system, str):
-                        structured_system = [{
-                            "type": "text",
-                            "text": system,
-                            "cache_control": {"type": cache_type_enum.value}
-                        }]
+                        structured_system = [
+                            {
+                                "type": "text",
+                                "text": system,
+                                "cache_control": {"type": cache_type_enum.value},
+                            }
+                        ]
                         params["system"] = structured_system
-                        logger.debug(f"Converted string system prompt to structured format for request {i}")
+                        logger.debug(
+                            f"Converted string system prompt to structured format for request {i}"
+                        )
 
                     # Add cache control to list system prompts
                     elif isinstance(system, list):
@@ -293,7 +318,9 @@ class AnthropicBatchHandlerUtil:
                                 )
                             if "cache_control" not in msg:
                                 msg["cache_control"] = {"type": cache_type_enum.value}
-                        logger.debug(f"Added cache control to list system prompts for request {i}")
+                        logger.debug(
+                            f"Added cache control to list system prompts for request {i}"
+                        )
 
                     else:
                         raise CacheControlError(
@@ -305,7 +332,9 @@ class AnthropicBatchHandlerUtil:
                         f"Failed to prepare cache control for request {i}: {str(e)}"
                     )
 
-            logger.debug(f"Cache control preparation completed for {len(requests)} requests")
+            logger.debug(
+                f"Cache control preparation completed for {len(requests)} requests"
+            )
 
         except CacheControlError:
             raise
@@ -318,7 +347,7 @@ class AnthropicBatchHandlerUtil:
         job_id: str,
         requests: List[Dict[str, Any]],
         base_dir: str,
-        request_file_prefix: str
+        request_file_prefix: str,
     ) -> str:
         """
         Save batch request information to configured directory.
@@ -365,12 +394,12 @@ class AnthropicBatchHandlerUtil:
                 "job_id": job_id,
                 "timestamp": datetime.now().isoformat(),
                 "request_count": len(requests),
-                "requests": requests
+                "requests": requests,
             }
 
             # Save to file with proper encoding and formatting
             try:
-                with save_path.open('w', encoding='utf-8') as f:
+                with save_path.open("w", encoding="utf-8") as f:
                     json.dump(batch_info, f, indent=2, ensure_ascii=False)
             except IOError as e:
                 raise BatchProcessingError(f"Failed to write file: {str(e)}")
@@ -386,12 +415,11 @@ class AnthropicBatchHandlerUtil:
 
     @staticmethod
     def chunk_messages(
-        messages_list: List[List[Dict[str, Any]]], 
-        chunk_size: int
+        messages_list: List[List[Dict[str, Any]]], chunk_size: int
     ) -> List[List[List[Dict[str, Any]]]]:
         """
         Split large message lists into smaller chunks for batch processing.
-        
+
         Args:
             messages_list: List of message lists to split
             chunk_size: Maximum size for each chunk
@@ -422,7 +450,7 @@ class AnthropicBatchHandlerUtil:
 
             # Split messages into chunks
             chunks = [
-                messages_list[i:i + chunk_size]
+                messages_list[i : i + chunk_size]
                 for i in range(0, total_size, chunk_size)
             ]
 
@@ -451,16 +479,16 @@ class AnthropicBatchHandlerUtil:
 
     @staticmethod
     def process_large_batch(
-        handler: 'AnthropicBatchHandler',
+        handler: "AnthropicBatchHandler",
         system_prompt: str,
         messages_list: List[List[Dict[str, Any]]],
         chunk_size: int | None = None,
         retry_strategy: Dict[str, Any] | None = None,
-        **kwargs
+        **kwargs,
     ) -> List[Dict[str, Any]]:
         """
         Process large batch by splitting into chunks and executing each chunk.
-        
+
         Args:
             handler: AnthropicBatchHandler instance for executing requests
             system_prompt: System prompt for all requests
@@ -483,9 +511,9 @@ class AnthropicBatchHandlerUtil:
         """
         try:
             retry_config = retry_strategy or {
-                'max_retries': 3,
-                'retry_delay': 60,
-                'backoff_factor': 2.0
+                "max_retries": 3,
+                "retry_delay": 60,
+                "backoff_factor": 2.0,
             }
             # Validate input parameters
             if not isinstance(system_prompt, str) or not system_prompt:
@@ -501,8 +529,7 @@ class AnthropicBatchHandlerUtil:
 
             # Split messages into chunks
             chunks = AnthropicBatchHandlerUtil.chunk_messages(
-                messages_list=messages_list,
-                chunk_size=effective_chunk_size
+                messages_list=messages_list, chunk_size=effective_chunk_size
             )
 
             results = []
@@ -511,39 +538,49 @@ class AnthropicBatchHandlerUtil:
             # Process each chunk
             for i, chunk in enumerate(chunks, 1):
                 retries = 0
-                while retries <= retry_config['max_retries']:
+                while retries <= retry_config["max_retries"]:
                     try:
-                        logger.debug(f"Processing chunk {i}/{total_chunks} (size: {len(chunk)})")
+                        logger.debug(
+                            f"Processing chunk {i}/{total_chunks} (size: {len(chunk)})"
+                        )
 
                         # Generate unique prefix for this chunk
-                        chunk_prefix = f"{kwargs.get('custom_id_prefix', 'request')}_{i}"
-                        chunk_kwargs = {**kwargs, 'custom_id_prefix': chunk_prefix}
+                        chunk_prefix = (
+                            f"{kwargs.get('custom_id_prefix', 'request')}_{i}"
+                        )
+                        chunk_kwargs = {**kwargs, "custom_id_prefix": chunk_prefix}
 
                         # Execute batch for this chunk
                         result = handler.execute_batch_with_monitoring(
                             system_prompt=system_prompt,
                             messages_list=chunk,
-                            **chunk_kwargs
+                            **chunk_kwargs,
                         )
 
-                        results.append({
-                            'chunk_index': i,
-                            'chunk_size': len(chunk),
-                            'result': result
-                        })
+                        results.append(
+                            {
+                                "chunk_index": i,
+                                "chunk_size": len(chunk),
+                                "result": result,
+                            }
+                        )
 
                         logger.debug(f"Chunk {i}/{total_chunks} processed successfully")
                         break
                     except Exception as e:
                         retries += 1
-                        if retries > retry_config['max_retries']:
+                        if retries > retry_config["max_retries"]:
                             raise
-                        delay = retry_config['retry_delay'] * (retry_config['backoff_factor'] ** (retries - 1))
-                        logger.warning(f"Chunk {i} failed, retrying in {delay}s: {str(e)}")
+                        delay = retry_config["retry_delay"] * (
+                            retry_config["backoff_factor"] ** (retries - 1)
+                        )
+                        logger.warning(
+                            f"Chunk {i} failed, retrying in {delay}s: {str(e)}"
+                        )
                         time.sleep(delay)
 
             # Summarize results
-            successful_chunks = sum(1 for r in results if 'error' not in r)
+            successful_chunks = sum(1 for r in results if "error" not in r)
             logger.info(
                 f"Large batch processing completed: "
                 f"{successful_chunks}/{total_chunks} chunks successful"
@@ -557,22 +594,23 @@ class AnthropicBatchHandlerUtil:
             logger.error(f"Unexpected error during large batch processing: {str(e)}")
             raise BatchProcessingError(f"Large batch processing failed: {str(e)}")
 
+
 class AnthropicBatchHandler:
     """
     Main handler for Anthropic batch API operations.
     Provides public interface for batch request execution and monitoring.
     """
-    
+
     def __init__(self, external_settings: Settings | None = None):
         """
         Initialize batch handler.
-        
+
         Args:
             settings: Optional custom settings
         """
         self.settings: Settings = settings or Settings.load()
         self.util = AnthropicBatchHandlerUtil()
-        
+
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY is not set")
@@ -581,8 +619,8 @@ class AnthropicBatchHandler:
             api_key=api_key,
             default_headers={
                 "anthropic-version": settings.api.version,
-                "anthropic-beta": ",".join(settings.api.beta_features)
-            }
+                "anthropic-beta": ",".join(settings.api.beta_features),
+            },
         )
 
     def build_requests(
@@ -590,7 +628,7 @@ class AnthropicBatchHandler:
         system_prompt: str,
         messages_list: List[List[dict]],
         custom_id_prefix: str = "request",
-        enable_prompt_cache: bool | None = None
+        enable_prompt_cache: bool | None = None,
     ) -> List[Dict[str, Any]]:
         """
         Build batch requests from message lists.
@@ -633,7 +671,7 @@ class AnthropicBatchHandler:
                         model_string=self.settings.model.name,
                         max_tokens=self.settings.model.max_tokens,
                         temperature=self.settings.model.temperature,
-                        stop_sequences=self.settings.model.stop_sequences
+                        stop_sequences=self.settings.model.stop_sequences,
                     )
                     requests.append(request)
 
@@ -647,16 +685,15 @@ class AnthropicBatchHandler:
 
             # Handle prompt caching if enabled
             use_cache = (
-                enable_prompt_cache 
-                if enable_prompt_cache is not None 
+                enable_prompt_cache
+                if enable_prompt_cache is not None
                 else self.settings.batch.enable_prompt_cache
             )
-            
+
             if use_cache:
                 try:
                     self.util.prepare_cache_control(
-                        requests=requests,
-                        cache_type=self.settings.batch.cache_type
+                        requests=requests, cache_type=self.settings.batch.cache_type
                     )
                     logger.debug("Prompt caching prepared for requests")
                 except CacheControlError as e:
@@ -676,11 +713,11 @@ class AnthropicBatchHandler:
             raise ValidationError(f"Failed to build requests: {str(e)}")
 
     def execute_batch(
-        self, 
+        self,
         system_prompt: str,
         messages_list: List[List[dict]],
         enable_prompt_cache: bool | None = None,
-        custom_id_prefix: str = "request"
+        custom_id_prefix: str = "request",
     ) -> str:
         """
         Execute a batch request.
@@ -704,35 +741,41 @@ class AnthropicBatchHandler:
                 system_prompt=system_prompt,
                 messages_list=messages_list,
                 custom_id_prefix=custom_id_prefix,
-                enable_prompt_cache=enable_prompt_cache
+                enable_prompt_cache=enable_prompt_cache,
             )
 
             # Validate batch request against configured limits
             self.util.validate_batch_request(
                 requests=requests,
                 max_batch_size=self.settings.batch.max_size,
-                max_payload_size=self.settings.api.max_payload_size
+                max_payload_size=self.settings.api.max_payload_size,
             )
 
             try:
                 # Execute batch request
                 message_batch = self.client.beta.messages.batches.create(
-                    betas = self.settings.api.beta_features,
-                    requests=[Request(custom_id=r["custom_id"], params=r["params"]) for r in requests]
+                    betas=self.settings.api.beta_features,
+                    requests=[
+                        Request(custom_id=r["custom_id"], params=r["params"])
+                        for r in requests
+                    ],
                 )
-                
+
                 logger.info(f"Batch request submitted successfully: {message_batch.id}")
 
                 # Save request information for logging/debugging
                 save_path = self.util.save_batch_request(
                     job_id=message_batch.id,
                     requests=requests,
-                    base_dir=str(self.settings.storage.base_dir / self.settings.storage.subdirs["requests"]),
-                    request_file_prefix=self.settings.storage.request_file_prefix
+                    base_dir=str(
+                        self.settings.storage.base_dir
+                        / self.settings.storage.subdirs["requests"]
+                    ),
+                    request_file_prefix=self.settings.storage.request_file_prefix,
                 )
-                
+
                 logger.debug(f"Batch request saved to: {save_path}")
-                
+
                 return message_batch.id
 
             except Exception as e:
@@ -745,13 +788,15 @@ class AnthropicBatchHandler:
             logger.error(f"Unexpected error during batch execution: {str(e)}")
             raise BatchProcessingError(f"Batch execution failed: {str(e)}")
 
-    def check_batch_status(self, job_id: str) -> Tuple[str, Any, Dict[str, Dict[str, int]]]:
+    def check_batch_status(
+        self, job_id: str
+    ) -> Tuple[str, Any, Dict[str, Dict[str, int]]]:
         """
         Check the status of a batch request.
-        
+
         Args:
             job_id: The ID of the batch request to check
-            
+
         Returns:
             Tuple containing:
             - status (str): The status of the batch
@@ -760,13 +805,13 @@ class AnthropicBatchHandler:
         """
         try:
             message_batch = self.client.beta.messages.batches.retrieve(job_id)
-            
+
             # Get results from results_url if available
             results = None
             if message_batch.processing_status == "ended" and message_batch.results_url:
                 # Fetch results from results_url
                 results = self._fetch_results_from_url(message_batch.results_url)
-            
+
             # Convert metrics to expected format
             metrics = {
                 "request_counts": {
@@ -774,52 +819,54 @@ class AnthropicBatchHandler:
                     "succeeded": message_batch.request_counts.succeeded,
                     "errored": message_batch.request_counts.errored,
                     "canceled": message_batch.request_counts.canceled,
-                    "expired": message_batch.request_counts.expired
+                    "expired": message_batch.request_counts.expired,
                 }
             }
-            
+
             return message_batch.processing_status, results, metrics
-            
+
         except Exception as e:
             logger.error(f"Failed to check batch status: {str(e)}")
             raise BatchProcessingError(
                 f"Failed to check batch status: {str(e)}",
                 error_type=AnthropicErrorType.from_error(e),
-                original_error=e
+                original_error=e,
             )
 
     def _fetch_results_from_url(self, results_url: str) -> List[Any]:
         """
         Fetch results from the provided results URL using the Anthropic client.
-        
+
         Args:
             results_url: URL to fetch the results from
-            
+
         Returns:
             List of batch results
-            
+
         Raises:
             BatchProcessingError: If fetching results fails
         """
         try:
             # Get batch ID from results_url
             # Expected format: ".../messages/batches/{batch_id}/results"
-            batch_id = results_url.split('/')[-2]
-            
+            batch_id = results_url.split("/")[-2]
+
             # Use the client's results method to fetch results
             results = []
             for result in self.client.beta.messages.batches.results(batch_id):
                 results.append(result)
-                
-            logger.debug(f"Successfully fetched {len(results)} results from batch {batch_id}")
+
+            logger.debug(
+                f"Successfully fetched {len(results)} results from batch {batch_id}"
+            )
             return results
-            
+
         except Exception as e:
             logger.error(f"Failed to fetch results from URL: {str(e)}")
             raise BatchProcessingError(
                 f"Failed to fetch results: {str(e)}",
                 error_type=AnthropicErrorType.from_error(e),
-                original_error=e
+                original_error=e,
             )
 
     def execute_batch_with_monitoring(
@@ -827,7 +874,7 @@ class AnthropicBatchHandler:
         system_prompt: str,
         messages_list: List[List[dict]],
         enable_prompt_cache: bool | None = None,
-        custom_id_prefix: str = "request"
+        custom_id_prefix: str = "request",
     ) -> Dict:
         """
         Execute batch request with monitoring.
@@ -857,39 +904,42 @@ class AnthropicBatchHandler:
                 system_prompt=system_prompt,
                 messages_list=messages_list,
                 enable_prompt_cache=enable_prompt_cache,
-                custom_id_prefix=custom_id_prefix
+                custom_id_prefix=custom_id_prefix,
             )
-            
+
             # Set up monitoring task parameters
             timezone = pytz.timezone(self.settings.worker.worker.timezone)
             start_time = datetime.now(timezone)
-            scheduled_time = start_time + timedelta(seconds=self.settings.worker.monitor.initial_delay)
-            
+            scheduled_time = start_time + timedelta(
+                seconds=self.settings.worker.monitor.initial_delay
+            )
+
             # Generate result file path
             timestamp = start_time.strftime("%Y%m%d_%H%M%S")
             result_path = str(
-                self.settings.storage.base_dir / 
-                self.settings.storage.subdirs["results"] /
-                f"{self.settings.storage.result_file_prefix}_{timestamp}_{job_id}.json"
+                self.settings.storage.base_dir
+                / self.settings.storage.subdirs["results"]
+                / f"{self.settings.storage.result_file_prefix}_{timestamp}_{job_id}.json"
             )
-            
+
             logger.info(f"Scheduling monitoring task for job_id: {job_id}")
             logger.info(f"Start time: {start_time.isoformat()}")
             logger.info(f"Scheduled time: {scheduled_time.isoformat()}")
-            
+
             try:
                 # Schedule monitoring task
                 from .batch_tasks import monitor_batch
+
                 task = monitor_batch.apply_async(
                     args=[job_id, result_path],
                     kwargs={
                         "start_time": start_time.isoformat(),
                     },
-                    eta=scheduled_time
+                    eta=scheduled_time,
                 )
-                
+
                 logger.info(f"Monitoring task scheduled with task_id: {task.id}")
-                
+
                 return {
                     "status": "submitted",
                     "job_id": job_id,
@@ -897,19 +947,16 @@ class AnthropicBatchHandler:
                     "start_time": start_time.isoformat(),
                     "scheduled_time": scheduled_time.isoformat(),
                     "task_id": task.id,
-                    "timezone": str(timezone)
+                    "timezone": str(timezone),
                 }
-                
+
             except Exception as e:
                 logger.error(f"Failed to schedule monitoring task: {str(e)}")
                 raise BatchProcessingError(f"Failed to schedule monitoring: {str(e)}")
-                
+
         except Exception as e:
             logger.error(f"Batch submission failed: {str(e)}", exc_info=True)
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            return {"status": "error", "error": str(e)}
 
     def get_batch_metrics(self, job_id: str) -> Dict[str, Any]:
         """
@@ -917,27 +964,32 @@ class AnthropicBatchHandler:
         """
         try:
             message_batch = self.client.beta.messages.batches.retrieve(job_id)
-            
+
             # Calculate total requests and success rate
-            total_requests = sum([
-                message_batch.request_counts.processing,
-                message_batch.request_counts.succeeded,
-                message_batch.request_counts.errored,
-                message_batch.request_counts.canceled,
-                message_batch.request_counts.expired
-            ])
-            
-            completed_requests = sum([
-                message_batch.request_counts.succeeded,
-                message_batch.request_counts.errored,
-                message_batch.request_counts.expired
-            ])
-            
+            total_requests = sum(
+                [
+                    message_batch.request_counts.processing,
+                    message_batch.request_counts.succeeded,
+                    message_batch.request_counts.errored,
+                    message_batch.request_counts.canceled,
+                    message_batch.request_counts.expired,
+                ]
+            )
+
+            completed_requests = sum(
+                [
+                    message_batch.request_counts.succeeded,
+                    message_batch.request_counts.errored,
+                    message_batch.request_counts.expired,
+                ]
+            )
+
             success_rate = (
                 (message_batch.request_counts.succeeded / completed_requests * 100)
-                if completed_requests > 0 else 0
+                if completed_requests > 0
+                else 0
             )
-            
+
             return {
                 "request_counts": {
                     "processing": message_batch.request_counts.processing,
@@ -945,17 +997,18 @@ class AnthropicBatchHandler:
                     "errored": message_batch.request_counts.errored,
                     "canceled": message_batch.request_counts.canceled,
                     "expired": message_batch.request_counts.expired,
-                    "total": total_requests
+                    "total": total_requests,
                 },
                 "success_rate": success_rate,
                 "status": message_batch.processing_status,
                 "has_errors": message_batch.request_counts.errored > 0,
                 "error_rate": (
                     message_batch.request_counts.errored / completed_requests * 100
-                    if completed_requests > 0 else 0
-                )
+                    if completed_requests > 0
+                    else 0
+                ),
             }
-            
+
         except Exception as e:
             logger.error(f"Failed to get batch metrics for {job_id}: {str(e)}")
             raise BatchProcessingError(f"Failed to get batch metrics: {str(e)}")
@@ -965,53 +1018,57 @@ class AnthropicBatchHandler:
         Serialize batch results into a consistent format.
         """
         serialized_results = []
-        
+
         try:
             for result in results:
                 serialized_result = {
-                    'custom_id': result.custom_id,
-                    'result': {
-                        'type': result.result.type,
-                    }
+                    "custom_id": result.custom_id,
+                    "result": {
+                        "type": result.result.type,
+                    },
                 }
-                
+
                 # Handle successful results
-                if result.result.type == 'succeeded':
+                if result.result.type == "succeeded":
                     message = result.result.message
-                    serialized_result['result'].update({
-                        'message': {
-                            'id': message.id,
-                            'type': message.type,
-                            'role': message.role,
-                            'content': [
-                                {
-                                    'type': content_block.type,
-                                    'text': content_block.text
-                                }
-                                for content_block in message.content
-                            ],
-                            'model': message.model,
-                            'stop_reason': message.stop_reason,
-                            'stop_sequence': message.stop_sequence,
-                            'usage': {
-                                'input_tokens': message.usage.input_tokens,
-                                'output_tokens': message.usage.output_tokens
+                    serialized_result["result"].update(
+                        {
+                            "message": {
+                                "id": message.id,
+                                "type": message.type,
+                                "role": message.role,
+                                "content": [
+                                    {
+                                        "type": content_block.type,
+                                        "text": content_block.text,
+                                    }
+                                    for content_block in message.content
+                                ],
+                                "model": message.model,
+                                "stop_reason": message.stop_reason,
+                                "stop_sequence": message.stop_sequence,
+                                "usage": {
+                                    "input_tokens": message.usage.input_tokens,
+                                    "output_tokens": message.usage.output_tokens,
+                                },
                             }
                         }
-                    })
+                    )
                 # Handle error results
-                elif result.result.type == 'error':
-                    serialized_result['result'].update({
-                        'error': {
-                            'type': result.result.error.type,
-                            'message': result.result.error.message
+                elif result.result.type == "error":
+                    serialized_result["result"].update(
+                        {
+                            "error": {
+                                "type": result.result.error.type,
+                                "message": result.result.error.message,
+                            }
                         }
-                    })
-                
+                    )
+
                 serialized_results.append(serialized_result)
-                
+
             return serialized_results
-            
+
         except Exception as e:
             logger.error(f"Failed to serialize batch results: {str(e)}")
-            raise BatchProcessingError(f"Failed to serialize results: {str(e)}") 
+            raise BatchProcessingError(f"Failed to serialize results: {str(e)}")
