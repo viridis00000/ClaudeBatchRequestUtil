@@ -6,14 +6,14 @@ from typing import List, Dict
 # Add parent directory to path to import batch handler
 sys.path.append(str(Path(__file__).parent.parent.parent.parent.parent))
 
-from src.python.anthropic_batch_request_util.batch_handler import AnthropicBatchHandler
+from ..batch_handler import AnthropicBatchHandler
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 def create_test_messages() -> List[List[Dict]]:
     """
@@ -25,8 +25,9 @@ def create_test_messages() -> List[List[Dict]]:
         ],
         [  # Second conversation
             {"role": "user", "content": "What is the capital of France?"}
-        ]
+        ],
     ]
+
 
 def main():
     """
@@ -38,15 +39,17 @@ def main():
 
         # Create test messages
         messages_list = create_test_messages()
-        system_prompt = "You are a helpful AI assistant. Provide clear and concise answers."
+        system_prompt = (
+            "You are a helpful AI assistant. Provide clear and concise answers."
+        )
 
         logger.info("Executing batch request with test messages...")
-        
+
         # Execute batch with monitoring
         result = handler.execute_batch_with_monitoring(
             system_prompt=system_prompt,
             messages_list=messages_list,
-            custom_id_prefix="test_batch"
+            custom_id_prefix="test_batch",
         )
 
         logger.info("Batch request submitted successfully:")
@@ -58,5 +61,6 @@ def main():
         logger.error(f"Error executing test batch request: {str(e)}", exc_info=True)
         sys.exit(1)
 
+
 if __name__ == "__main__":
-    main() 
+    main()
