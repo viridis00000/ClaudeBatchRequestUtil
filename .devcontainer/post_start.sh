@@ -7,9 +7,12 @@ export REDIS_DATA_DIR=$(echo "$REDIS_CONFIG" | yq -r '.data_dir')
 export REDIS_APPENDONLY=$(echo "$REDIS_CONFIG" | yq -r '.appendonly')
 export REDIS_MAXMEM=$(echo "$REDIS_CONFIG" | yq -r '.maxmemory')
 export REDIS_MAXMEM_POLICY=$(echo "$REDIS_CONFIG" | yq -r '.maxmemory_policy')
+export REDIS_PROTECTED_MODE=$(echo "$REDIS_CONFIG" | yq -r '.protected_mode')
 
 # Create necessary directories
 mkdir -p $REDIS_DATA_DIR
+echo "protected-mode $REDIS_PROTECTED_MODE" >> $REDIS_DATA_DIR/redis.conf 
+echo "bind 0.0.0.0" >> $REDIS_DATA_DIR/redis.conf
 mkdir -p /var/log/redis
 mkdir -p /etc/supervisor/conf.d
 
