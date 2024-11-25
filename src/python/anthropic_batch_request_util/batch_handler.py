@@ -618,12 +618,11 @@ class AnthropicBatchHandler:
                 raise ValidationError("Invalid custom_id_prefix")
 
             requests = []
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
             for i, messages in enumerate(messages_list):
                 try:
                     # Generate unique custom ID for each request
-                    custom_id = f"{custom_id_prefix}_{timestamp}_{i}"
+                    custom_id = f"{custom_id_prefix}_{i}"
 
                     # Build request using utility method
                     request = self.util.build_request_payload(
